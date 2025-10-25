@@ -8,7 +8,7 @@ This `dist/` folder contains a ready-to-run distribution of Nexus Converter. It 
 
 ## Usage
 
-Note: On Linux/macOS use `nexus-converter.sh`; on Windows use `nexus-converter.bat`. If you mix them up, the launcher will print a friendly hint and exit.
+Note: On Linux/macOS use `nexus-converter.sh`; on Windows use `nexus-converter.bat`. If you mix them up, the launcher will print a friendly hint and exit. See [Launcher troubleshooting](#launcher-troubleshooting).
 
 Quick usage from `dist/`:
 
@@ -64,6 +64,20 @@ Enable debug output:
 ```bash
 ./nexus-converter.sh -- --debug ~/Videos/clip.mkv
 ```
+
+### Launcher troubleshooting
+
+- If you accidentally run the Windows launcher on Unix:
+
+  ```text
+  This is a Windows .bat script. On Unix, run ./nexus-converter.sh
+  ```
+
+- If you invoke the Unix launcher with sh/dash instead of bash:
+
+  ```text
+  This script requires bash. Try: bash ./nexus-converter.sh [options] -- [app-args]
+  ```
 
 ## Housekeeping helpers
 

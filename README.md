@@ -25,7 +25,7 @@ Nexus Converter is a high-performance command-line tool designed to seamlessly c
 
 ## For End Users: Quick Start
 
-Note: On Linux/macOS use `nexus-converter.sh`; on Windows use `nexus-converter.bat`. If you mix them up, the launcher will print a friendly hint and exit.
+Note: On Linux/macOS use `nexus-converter.sh`; on Windows use `nexus-converter.bat`. If you mix them up, the launcher will print a friendly hint and exit. See [Launcher troubleshooting](#launcher-troubleshooting).
 
 - Minimal usage (Linux/macOS):
 
@@ -68,6 +68,20 @@ Diagnostics and dry-run:
 # Show what would run without executing the app
 ./nexus-converter.sh --dry-run -- --input file.mp4
 ```
+
+### Launcher troubleshooting
+
+- If you accidentally run the Windows launcher on Unix:
+
+  ```text
+  This is a Windows .bat script. On Unix, run ./nexus-converter.sh
+  ```
+
+- If you invoke the Unix launcher with sh/dash instead of bash:
+
+  ```text
+  This script requires bash. Try: bash ./nexus-converter.sh [options] -- [app-args]
+  ```
 
 ---
 
