@@ -3,7 +3,7 @@
 This `dist/` folder contains a ready-to-run distribution of Nexus Converter. It includes:
 
 - A shaded JAR (`nexus-converter-<version>.jar`) with Java dependencies and the Linux x86_64 native library embedded.
-- Launch scripts: `start-nexus-converter.sh`, `run-nexus-converter.sh` (POSIX) and optional `.bat` launchers for Windows.
+- Unified launchers: `nexus-converter.sh` (POSIX) and `nexus-converter.bat` (Windows).
 - Handy housekeeping scripts: `cleanup-mp3.sh` and `move-mp3.sh`.
 
 ## Usage
@@ -11,13 +11,13 @@ This `dist/` folder contains a ready-to-run distribution of Nexus Converter. It 
 Quick usage from `dist/`:
 
 ```bash
-./start-nexus-converter.sh /path/to/video.mp4
+./nexus-converter.sh -- /path/to/video.mp4
 ```
 
-Or in one line (run script):
+Windows:
 
-```bash
-./run-nexus-converter.sh /path/to/video.mp4 -q
+```bat
+nexus-converter.bat -- C:\\path\\to\\video.mp4
 ```
 
 ### Options
@@ -31,28 +31,36 @@ Or in one line (run script):
 
 ### Examples
 
+Launcher help and diagnostics:
+
+```bash
+./nexus-converter.sh --help       # launcher help
+./nexus-converter.sh --doctor     # environment checks (Java/Maven/JAR)
+./nexus-converter.sh --dry-run -- --help  # show app help without running
+```
+
 Convert with defaults to Music/Downloads/input directory fallback:
 
 ```bash
-./start-nexus-converter.sh ~/Videos/clip.mp4
+./nexus-converter.sh -- ~/Videos/clip.mp4
 ```
 
 Specify an output directory:
 
 ```bash
-./run-nexus-converter.sh -d "$HOME/Music" ~/Videos/clip.avi
+./nexus-converter.sh -- -d "$HOME/Music" ~/Videos/clip.avi
 ```
 
 Force overwrite and quiet mode:
 
 ```bash
-./run-nexus-converter.sh -f -q ~/Videos/clip.mov
+./nexus-converter.sh -- -f -q ~/Videos/clip.mov
 ```
 
 Enable debug output:
 
 ```bash
-./run-nexus-converter.sh --debug ~/Videos/clip.mkv
+./nexus-converter.sh -- --debug ~/Videos/clip.mkv
 ```
 
 ## Housekeeping helpers

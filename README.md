@@ -28,13 +28,13 @@ Nexus Converter is a high-performance command-line tool designed to seamlessly c
 - Minimal usage (Linux/macOS):
 
   ```bash
-  ./start-nexus-converter.sh /path/to/my_video.mp4
+  ./nexus-converter.sh -- /path/to/my_video.mp4
   ```
 
 - Windows:
 
   ```bat
-  start-nexus-converter.bat C:\\path\\to\\my_video.mp4
+  nexus-converter.bat -- C:\\path\\to\\my_video.mp4
   ```
 
 - Useful options:
@@ -45,10 +45,26 @@ Nexus Converter is a high-performance command-line tool designed to seamlessly c
   - `-q, --quiet` minimal console output (spinner + final result)
   - `--debug` verbose logs for troubleshooting (cannot be combined with `--quiet`)
 
-Help:
+Launcher help:
 
 ```bash
-./start-nexus-converter.sh --help
+./nexus-converter.sh --help
+```
+
+Application help (forwarded to the JAR):
+
+```bash
+./nexus-converter.sh -- --help
+```
+
+Diagnostics and dry-run:
+
+```bash
+# Print environment checks (Java/Maven/JAR detection)
+./nexus-converter.sh --doctor
+
+# Show what would run without executing the app
+./nexus-converter.sh --dry-run -- --input file.mp4
 ```
 
 ---
@@ -442,8 +458,7 @@ Archive ready: nexus-converter-1.0.0-SNAPSHOT-dist.zip
 Contents of `dist/`:
 
 - `nexus-converter-<version>.jar` — runnable fat JAR
-- `start-nexus-converter.sh` / `.bat` — env checks + friendly UX
-- `run-nexus-converter.sh` / `.bat` — minimal runner
+- `nexus-converter.sh` / `.bat` — unified launcher (doctor/dry-run/build)
 - `cleanup-mp3.sh`, `move-mp3.sh` — optional helpers
 - `README.md` — end-user quick start
 

@@ -11,8 +11,8 @@ PROJECT_ROOT="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 POM_FILE="$PROJECT_ROOT/pom.xml"
 README_FILE="$PROJECT_ROOT/README.md"
 DIST_README_TEMPLATE="$PROJECT_ROOT/README.dist.md"
-RUN_SCRIPT_SH="$PROJECT_ROOT/run-nexus-converter.sh"
-RUN_SCRIPT_BAT="$PROJECT_ROOT/run-nexus-converter.bat"
+LAUNCHER_SH="$PROJECT_ROOT/nexus-converter.sh"
+LAUNCHER_BAT="$PROJECT_ROOT/nexus-converter.bat"
 
 echo "🚀 Starting packaging process for Nexus Converter..."
 
@@ -25,11 +25,11 @@ if ! command -v mvn &> /dev/null; then
     echo "❌ Error: 'mvn' command not found. Please install Maven." >&2
     exit 1
 fi
-if [ ! -f "$RUN_SCRIPT_SH" ]; then
-  echo "⚠️ Warning: run-nexus-converter.sh not found. Skipping." >&2
+if [ ! -f "$LAUNCHER_SH" ]; then
+  echo "⚠️ Warning: nexus-converter.sh not found. Skipping." >&2
 fi
-if [ ! -f "$RUN_SCRIPT_BAT" ]; then
-  echo "⚠️ Warning: run-nexus-converter.bat not found. Skipping." >&2
+if [ ! -f "$LAUNCHER_BAT" ]; then
+  echo "⚠️ Warning: nexus-converter.bat not found. Skipping." >&2
 fi
 
 # --- 2. Run Maven Build ---
@@ -55,32 +55,17 @@ fi
 echo "➡️ Copying JAR: $BUILT_JAR"
 cp "$BUILT_JAR" "$DIST_DIR/"
 
-echo "➡️ Copying run scripts..."
-if [ -f "$RUN_SCRIPT_SH" ]; then
-  cp "$RUN_SCRIPT_SH" "$DIST_DIR/"
-  chmod +x "$DIST_DIR/run-nexus-converter.sh" # Ensure executable permission
+echo "➡️ Copying launcher scripts..."
+if [ -f "$LAUNCHER_SH" ]; then
+  cp "$LAUNCHER_SH" "$DIST_DIR/"
+  chmod +x "$DIST_DIR/nexus-converter.sh" # Ensure executable permission
 else
-  echo "   Skipped: run-nexus-converter.sh"
+  echo "   Skipped: nexus-converter.sh"
 fi
-# Also copy start script if present
-START_SH="$PROJECT_ROOT/start-nexus-converter.sh"
-if [ -f "$START_SH" ]; then
-  cp "$START_SH" "$DIST_DIR/"
-  chmod +x "$DIST_DIR/start-nexus-converter.sh" || true
+if [ -f "$LAUNCHER_BAT" ]; then
+  cp "$LAUNCHER_BAT" "$DIST_DIR/"
 else
-  echo "   Skipped: start-nexus-converter.sh"
-fi
-if [ -f "$RUN_SCRIPT_BAT" ]; then
-  cp "$RUN_SCRIPT_BAT" "$DIST_DIR/"
-else
-  echo "   Skipped: run-nexus-converter.bat"
-fi
-# Also copy Windows start script if present
-START_BAT="$PROJECT_ROOT/start-nexus-converter.bat"
-if [ -f "$START_BAT" ]; then
-  cp "$START_BAT" "$DIST_DIR/"
-else
-  echo "   Skipped: start-nexus-converter.bat"
+  echo "   Skipped: nexus-converter.bat"
 fi
 
 # Copy distribution README (prefer template, fallback to root README)

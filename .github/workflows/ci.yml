@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-and-sanity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+
+      - name: Make launcher executable
+        run: chmod +x ./nexus-converter.sh
+
+      - name: Pre-build doctor (informational)
+        run: |
+          set -euo pipefail
+          ./nexus-converter.sh --doctor || true
+
+      - name: Build with Maven (skip tests)
+        run: mvn -B -DskipTests=true clean package
+
+      - name: Post-build doctor (must detect JAR)
+        run: |
+          set -euo pipefail
+          ./nexus-converter.sh --doctor | tee doctor.out
+          grep -q "Runnable JAR detected" doctor.out
+
+      - name: Launcher dry-run with app help
+        run: ./nexus-converter.sh --dry-run -- --help
+
+      - name: Package distribution
+        run: |
+          set -euo pipefail
+          bash ./package_for_distribution.sh
+          test -f dist/nexus-converter.sh
+          test -f dist/README.md
+          test -f dist/$(ls dist | grep '^nexus-converter-.*\.jar$' | head -n1)
+          chmod +x dist/nexus-converter.sh
+          ./dist/nexus-converter.sh --doctor | tee dist_doctor.out
+          grep -q "Runnable JAR detected" dist_doctor.out
