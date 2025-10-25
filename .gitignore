@@ -1,0 +1,65 @@
+# --- OS / Editor junk ---
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# JetBrains / Eclipse (optional to commit; usually ignored)
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# --- Java / Maven ---
+# Ignore all Maven build outputs
+# (Unanchored 'target/' ignores any target folder in submodules too)
+target/
+
+# Compiled classes & logs
+*.class
+*.log
+hs_err_pid*
+replay_pid*
+
+# --- Rust / Cargo ---
+# Ignore Cargo build outputs in all crates
+**/target/
+
+# --- Distribution & build artifacts ---
+# Final bundles and archives created by packaging steps
+/dist/
+# Ignore archives globally to avoid accidental commits of large files
+*.zip
+*.tar
+*.tar.gz
+*.7z
+# Ignore JARs in build and dist outputs (allow explicit jar commits elsewhere if ever needed)
+target/**/*.jar
+dist/**/*.jar
+
+# Native libraries produced during builds (never commit)
+*.so
+*.dylib
+*.dll
+
+# Local environment files (if any)
+.env
+.env.*
+
+# --- Samples & large media (do not track in repo) ---
+# Keep source control small and avoid exceeding GitHub size limits
+native/assets/samples/resource/**
+native/assets/samples/target/**
+# Common large media from samples
+native/assets/samples/**/*.mp4
+native/assets/samples/**/*.mkv
+native/assets/samples/**/*.mov
+native/assets/samples/**/*.webm
+native/assets/samples/**/*.mp3
+native/assets/samples/**/*.wav
+native/assets/samples/**/*.flac
+
+# --- VS Code (decide per-repo) ---
+# .vscode/    # uncomment if you don't want to commit workspace settings/tasks

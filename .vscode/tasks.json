@@ -1,0 +1,27 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "Package dist with archive",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"./package_for_distribution.sh"
+			],
+			"problemMatcher": [],
+			"group": "build"
+		},
+		{
+			"label": "Build after CLI polish",
+			"type": "shell",
+			"command": "bash",
+			"args": [
+				"-lc",
+				"mvn -B -q -DskipTests=false clean package"
+			],
+			"problemMatcher": [],
+			"group": "build"
+		}
+	]
+}

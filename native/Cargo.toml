@@ -1,0 +1,23 @@
+[package]
+name = "media_converter_lib"
+version = "0.1.0"
+edition = "2021"             # Or "2024" if you are sure
+
+# Add this section to configure the library type for JNI
+[lib]
+crate-type = [
+    "cdylib",
+    "rlib",
+] # Build both C-compatible dynamic lib and Rust rlib for reuse
+
+[dependencies]
+jni = "0.21.1"
+ffmpeg-next = "7.1.0"
+log = "0.4"
+env_logger = "0.11"
+
+[workspace]
+members = [
+    "nexus-kit", # Reusable utilities crate (validation, helpers, etc.)
+    "nexus-lab", # Lab CLI for iterating on native logic
+]
