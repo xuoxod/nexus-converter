@@ -25,6 +25,8 @@ Nexus Converter is a high-performance command-line tool designed to seamlessly c
 
 ## For End Users: Quick Start
 
+Note: On Linux/macOS use `nexus-converter.sh`; on Windows use `nexus-converter.bat`. If you mix them up, the launcher will print a friendly hint and exit.
+
 - Minimal usage (Linux/macOS):
 
   ```bash

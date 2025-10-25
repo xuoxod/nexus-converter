@@ -1,4 +1,11 @@
 #!/usr/bin/env bash
+
+# Guard: ensure running under Bash (helps when invoked via sh/dash)
+if [ -z "${BASH_VERSION:-}" ]; then
+  echo "This script requires bash. Try: bash ./$(basename "$0") [options] -- [app-args]" >&2
+  exit 1
+fi
+
 set -euo pipefail
 
 # Unified, hardened launcher for Nexus Converter
@@ -15,6 +22,7 @@ error()   { echo -e "${RED}❌ $*${NC}" >&2; }
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 JAR_PATTERN='nexus-converter-*.jar'
+
 
 usage() {
   cat <<EOF

@@ -1,3 +1,4 @@
+:; echo "This is a Windows .bat script. On Unix, run ./nexus-converter.sh" >&2; exit 1
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 

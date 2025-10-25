@@ -8,6 +8,8 @@ This `dist/` folder contains a ready-to-run distribution of Nexus Converter. It 
 
 ## Usage
 
+Note: On Linux/macOS use `nexus-converter.sh`; on Windows use `nexus-converter.bat`. If you mix them up, the launcher will print a friendly hint and exit.
+
 Quick usage from `dist/`:
 
 ```bash
