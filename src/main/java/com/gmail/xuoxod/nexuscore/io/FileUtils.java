@@ -10,170 +10,101 @@ import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 /**
- * Utility class for common file input/output operations.
- * Uses modern Java NIO (java.nio.file) where possible.
- * Methods typically throw IOException, which the caller must handle.
+ * Sovereign utility class for common file input/output operations.
+ * Enforces null-byte rejection, sandboxed path resolution, and bounded reads.
  */
 public final class FileUtils {
 
-    // Default charset for string operations
     private static final Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
+    public static final long DEFAULT_MAX_READ_BYTES = 64L * 1024L * 1024L; // 64 MiB
 
-    // Private constructor to prevent instantiation
     private FileUtils() {
         throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
     }
 
-    // --- File Reading ---
+    private static Path validateSafePath(String filePath) {
+        if (filePath == null || filePath.trim().isEmpty()) {
+            throw new IllegalArgumentException("File path cannot be null or empty.");
+        }
+        if (filePath.indexOf('\0') >= 0) {
+            throw new IllegalArgumentException("File path contains illegal null byte.");
+        }
+        return Paths.get(filePath);
+    }
 
     /**
-     * Reads the entire content of a file into a single String using UTF-8 encoding.
-     * Note: This loads the entire file into memory. Not suitable for very large
-     * files.
-     *
-     * @param filePath The path to the file.
-     * @return The content of the file as a String.
-     * @throws IOException If an I/O error occurs reading from the file or the file
-     *                     does not exist.
+     * Resolves a relative path against a sandbox root directory and rejects traversal outside the root.
      */
+    public static Path resolveSafeChild(Path baseDir, String childPath) {
+        if (baseDir == null || childPath == null || childPath.trim().isEmpty() || childPath.indexOf('\0') >= 0) {
+            throw new IllegalArgumentException("Invalid base directory or child path.");
+        }
+        String lower = childPath.toLowerCase();
+        if (lower.contains("%2e%2e")) {
+            throw new SecurityException("Path traversal attempt rejected: " + childPath);
+        }
+        Path normalizedBase = baseDir.toAbsolutePath().normalize();
+        Path resolved = normalizedBase.resolve(childPath).normalize();
+        if (!resolved.startsWith(normalizedBase)) {
+            throw new SecurityException("Path traversal attempt escaped sandbox root: " + childPath);
+        }
+        return resolved;
+    }
+
     public static String readFileToString(String filePath) throws IOException {
         return readFileToString(filePath, DEFAULT_CHARSET);
     }
 
-    /**
-     * Reads the entire content of a file into a single String using the specified
-     * charset.
-     * Note: This loads the entire file into memory. Not suitable for very large
-     * files.
-     *
-     * @param filePath The path to the file.
-     * @param charset  The charset to use for decoding the file bytes.
-     * @return The content of the file as a String.
-     * @throws IOException If an I/O error occurs reading from the file or the file
-     *                     does not exist.
-     */
     public static String readFileToString(String filePath, Charset charset) throws IOException {
         byte[] encoded = readFileToBytes(filePath);
         return new String(encoded, charset);
     }
 
-    /**
-     * Reads all lines from a file into a List of Strings using UTF-8 encoding.
-     *
-     * @param filePath The path to the file.
-     * @return A List containing all lines from the file.
-     * @throws IOException If an I/O error occurs reading from the file or the file
-     *                     does not exist.
-     */
     public static List<String> readLines(String filePath) throws IOException {
         return readLines(filePath, DEFAULT_CHARSET);
     }
 
-    /**
-     * Reads all lines from a file into a List of Strings using the specified
-     * charset.
-     *
-     * @param filePath The path to the file.
-     * @param charset  The charset to use for decoding the file bytes.
-     * @return A List containing all lines from the file.
-     * @throws IOException If an I/O error occurs reading from the file or the file
-     *                     does not exist.
-     */
     public static List<String> readLines(String filePath, Charset charset) throws IOException {
-        Path path = Paths.get(filePath);
+        Path path = validateSafePath(filePath);
         return Files.readAllLines(path, charset);
     }
 
-    /**
-     * Reads the entire content of a file into a byte array.
-     * Note: This loads the entire file into memory. Not suitable for very large
-     * files.
-     *
-     * @param filePath The path to the file.
-     * @return The content of the file as a byte array.
-     * @throws IOException If an I/O error occurs reading from the file or the file
-     *                     does not exist.
-     */
     public static byte[] readFileToBytes(String filePath) throws IOException {
-        Path path = Paths.get(filePath);
+        return readFileToBytesBounded(filePath, DEFAULT_MAX_READ_BYTES);
+    }
+
+    public static byte[] readFileToBytesBounded(String filePath, long maxBytes) throws IOException {
+        if (maxBytes <= 0) {
+            throw new IllegalArgumentException("maxBytes must be positive");
+        }
+        Path path = validateSafePath(filePath);
+        long size = Files.size(path);
+        if (size > maxBytes) {
+            throw new IOException("File size (" + size + " bytes) exceeds maximum allowed bound (" + maxBytes + " bytes)");
+        }
         return Files.readAllBytes(path);
     }
 
-    // --- File Writing ---
-
-    /**
-     * Writes a String to a file using UTF-8 encoding.
-     * If the file exists, it will be overwritten. If not, it will be created.
-     * Parent directories will be created if they do not exist.
-     *
-     * @param filePath The path to the file.
-     * @param content  The String content to write.
-     * @throws IOException If an I/O error occurs writing to the file.
-     */
     public static void writeFileFromString(String filePath, String content) throws IOException {
         writeFileFromString(filePath, content, DEFAULT_CHARSET, false);
     }
 
-    /**
-     * Writes a String to a file using the specified charset.
-     * If the file exists, it will be overwritten. If not, it will be created.
-     * Parent directories will be created if they do not exist.
-     *
-     * @param filePath The path to the file.
-     * @param content  The String content to write.
-     * @param charset  The charset to use for encoding the string.
-     * @throws IOException If an I/O error occurs writing to the file.
-     */
     public static void writeFileFromString(String filePath, String content, Charset charset) throws IOException {
         writeFileFromString(filePath, content, charset, false);
     }
 
-    /**
-     * Writes a String to a file using the specified charset, with an option to
-     * append.
-     * If the file does not exist, it will be created.
-     * Parent directories will be created if they do not exist.
-     *
-     * @param filePath The path to the file.
-     * @param content  The String content to write.
-     * @param charset  The charset to use for encoding the string.
-     * @param append   If true, the content will be appended to the file; otherwise,
-     *                 the file will be overwritten.
-     * @throws IOException If an I/O error occurs writing to the file.
-     */
     public static void writeFileFromString(String filePath, String content, Charset charset, boolean append)
             throws IOException {
         byte[] data = content.getBytes(charset);
         writeFileFromBytes(filePath, data, append);
     }
 
-    /**
-     * Writes a byte array to a file.
-     * If the file exists, it will be overwritten. If not, it will be created.
-     * Parent directories will be created if they do not exist.
-     *
-     * @param filePath The path to the file.
-     * @param data     The byte array content to write.
-     * @throws IOException If an I/O error occurs writing to the file.
-     */
     public static void writeFileFromBytes(String filePath, byte[] data) throws IOException {
         writeFileFromBytes(filePath, data, false);
     }
 
-    /**
-     * Writes a byte array to a file, with an option to append.
-     * If the file does not exist, it will be created.
-     * Parent directories will be created if they do not exist.
-     *
-     * @param filePath The path to the file.
-     * @param data     The byte array content to write.
-     * @param append   If true, the content will be appended to the file; otherwise,
-     *                 the file will be overwritten.
-     * @throws IOException If an I/O error occurs writing to the file.
-     */
     public static void writeFileFromBytes(String filePath, byte[] data, boolean append) throws IOException {
-        Path path = Paths.get(filePath);
-        // Ensure parent directories exist
+        Path path = validateSafePath(filePath);
         Path parentDir = path.getParent();
         if (parentDir != null && !Files.exists(parentDir)) {
             Files.createDirectories(parentDir);
@@ -188,100 +119,39 @@ public final class FileUtils {
         Files.write(path, data, options);
     }
 
-    // --- Other File/Path Helpers ---
-
-    /**
-     * Checks if a file or directory exists at the given path.
-     *
-     * @param filePath The path to check.
-     * @return true if the path exists, false otherwise. Returns false if filePath
-     *         is null or empty.
-     */
     public static boolean exists(String filePath) {
-        if (filePath == null || filePath.trim().isEmpty()) {
+        if (filePath == null || filePath.trim().isEmpty() || filePath.indexOf('\0') >= 0) {
             return false;
         }
-        Path path = Paths.get(filePath);
-        return Files.exists(path);
+        return Files.exists(Paths.get(filePath));
     }
 
-    /**
-     * Checks if the given path represents an existing regular file.
-     *
-     * @param filePath The path to check.
-     * @return true if the path exists and is a regular file, false otherwise.
-     */
     public static boolean isFile(String filePath) {
-        if (filePath == null || filePath.trim().isEmpty()) {
+        if (filePath == null || filePath.trim().isEmpty() || filePath.indexOf('\0') >= 0) {
             return false;
         }
-        Path path = Paths.get(filePath);
-        return Files.isRegularFile(path); // Checks existence and that it's not a directory/link etc.
+        return Files.isRegularFile(Paths.get(filePath));
     }
 
-    /**
-     * Checks if the given path represents an existing directory.
-     *
-     * @param filePath The path to check.
-     * @return true if the path exists and is a directory, false otherwise.
-     */
     public static boolean isDirectory(String filePath) {
-        if (filePath == null || filePath.trim().isEmpty()) {
+        if (filePath == null || filePath.trim().isEmpty() || filePath.indexOf('\0') >= 0) {
             return false;
         }
-        Path path = Paths.get(filePath);
-        return Files.isDirectory(path); // Checks existence and that it's a directory
+        return Files.isDirectory(Paths.get(filePath));
     }
 
-    /**
-     * Creates a directory, including any necessary but nonexistent parent
-     * directories.
-     * Does nothing if the directory already exists.
-     *
-     * @param dirPath The path to the directory to create.
-     * @throws IOException              If an I/O error occurs or the directory
-     *                                  cannot be created (e.g., permissions, path
-     *                                  is a file).
-     * @throws IllegalArgumentException if dirPath is null or empty.
-     */
     public static void createDirectories(String dirPath) throws IOException {
-        if (dirPath == null || dirPath.trim().isEmpty()) {
-            throw new IllegalArgumentException("Directory path cannot be null or empty.");
-        }
-        Path path = Paths.get(dirPath);
+        Path path = validateSafePath(dirPath);
         Files.createDirectories(path);
     }
 
-    /**
-     * Deletes a file or an empty directory.
-     * Does not delete directories that are not empty.
-     *
-     * @param filePath The path to the file or empty directory to delete.
-     * @return true if the file/directory was deleted by this operation, false if it
-     *         did not exist.
-     * @throws IOException              If an I/O error occurs (e.g., directory not
-     *                                  empty, permissions).
-     * @throws IllegalArgumentException if filePath is null or empty.
-     */
     public static boolean delete(String filePath) throws IOException {
-        if (filePath == null || filePath.trim().isEmpty()) {
-            throw new IllegalArgumentException("File path cannot be null or empty.");
-        }
-        Path path = Paths.get(filePath);
+        Path path = validateSafePath(filePath);
         return Files.deleteIfExists(path);
     }
 
-    /**
-     * Gets the filename component from a full path string.
-     * e.g., "/path/to/file.txt" -> "file.txt"
-     * e.g., "file.txt" -> "file.txt"
-     *
-     * @param filePath The full path string.
-     * @return The filename, or an empty string if the path is null, empty, or ends
-     *         with a separator.
-     */
     public static String getFileName(String filePath) {
-        if (filePath == null || filePath.trim().isEmpty()) {
+        if (filePath == null || filePath.trim().isEmpty() || filePath.indexOf('\0') >= 0) {
             return "";
         }
         Path path = Paths.get(filePath);
@@ -289,33 +159,15 @@ public final class FileUtils {
         return (fileName != null) ? fileName.toString() : "";
     }
 
-    /**
-     * Gets the file extension from a filename or full path.
-     * Returns the extension without the leading dot (e.g., "txt", "jpg").
-     *
-     * @param filePath The filename or full path string.
-     * @return The file extension (lowercase), or an empty string if no extension is
-     *         found or path is invalid.
-     */
     public static String getFileExtension(String filePath) {
         String fileName = getFileName(filePath);
         if (!fileName.isEmpty()) {
             int dotIndex = fileName.lastIndexOf('.');
-            if (dotIndex > 0 && dotIndex < fileName.length() - 1) { // Ensure dot is not first or last char
+            if (dotIndex > 0 && dotIndex < fileName.length() - 1) {
                 return fileName.substring(dotIndex + 1).toLowerCase();
             }
         }
         return "";
     }
-
-    // TODO: Consider adding methods for:
-    // - Deleting directories recursively (use Files.walkFileTree)
-    // - Copying files/directories (use Files.copy)
-    // - Moving/Renaming files/directories (use Files.move)
-    // - Listing directory contents (Files.list or Files.walk) with filtering
-    // options
-    // - Getting file size (Files.size), last modified time
-    // (Files.getLastModifiedTime), etc.
-    // - Reading/Writing using streams for large files (Files.newInputStream,
-    // Files.newOutputStream)
 }
+

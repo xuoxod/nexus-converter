@@ -69,14 +69,15 @@ public class NativeConverter {
             Files.copy(libStream, tempFile, StandardCopyOption.REPLACE_EXISTING);
             libStream.close();
 
-            // Make executable on Unix-like systems (important!)
+            // Make executable on Unix-like systems using NIO PosixFilePermissions
             if (!os.contains("windows")) {
                 try {
-                    Runtime.getRuntime().exec(new String[] { "chmod", "+x", tempFile.toAbsolutePath().toString() })
-                            .waitFor();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IOException("Failed to set executable permission on temp library", e);
+                    java.util.Set<java.nio.file.attribute.PosixFilePermission> perms = Files
+                            .getPosixFilePermissions(tempFile);
+                    perms.add(java.nio.file.attribute.PosixFilePermission.OWNER_EXECUTE);
+                    Files.setPosixFilePermissions(tempFile, perms);
+                } catch (UnsupportedOperationException ignored) {
+                    tempFile.toFile().setExecutable(true, true);
                 }
             }
 
@@ -86,53 +87,36 @@ public class NativeConverter {
                 LOGGER.log(Level.INFO, "✅ Native library '{0}' loaded successfully from temporary file.", libFileName);
             }
 
-            // If you were using JNA's Native.load() before and need the INSTANCE:
-            // You might need to load it *after* System.load, potentially using the temp
-            // path,
-            // but often System.load is sufficient if your Rust functions are exposed
-            // correctly for JNI.
-            // For now, we'll rely on System.load making the native functions available
-            // globally.
-            // INSTANCE = Native.load(libName, MediaConverterLib.class); // Or potentially
-            // load via tempFile path if needed
-
         } catch (UnsatisfiedLinkError | IOException | UnsupportedOperationException e) {
             LOGGER.log(Level.SEVERE, "❌ Failed to load native library: " + e.getMessage(), e);
-            // Decide how to handle this - exit, throw runtime exception, etc.
-            System.exit(1); // Exit if library loading fails
+            System.exit(1);
         }
     }
 
-    // Static method to call the Rust function
-    // Ensure your Rust function is exposed correctly via JNI/FFI
-    // The name needs to match the JNI export name (e.g.,
-    // Java_com_gmail_xuoxod_nexusbridge_NativeConverter_convertToMp3)
-    // This method now acts as a wrapper around the actual native call.
+    private static boolean isSafeJniPath(String path) {
+        return path != null && !path.trim().isEmpty() && path.indexOf('\0') < 0 && path.length() <= 4096;
+    }
+
     public static int performConversion(String inputPath, String outputPath) {
+        if (!isSafeJniPath(inputPath) || !isSafeJniPath(outputPath)) {
+            LOGGER.log(Level.WARNING, "Rejected unsafe or empty path at JNI boundary.");
+            return 2;
+        }
         try {
-            // Directly call the native method exposed via JNI after System.load
             boolean ok = convertToMp3(inputPath, outputPath);
             return ok ? 0 : 2; // 0 = success, 2 = native conversion reported failure
         } catch (UnsatisfiedLinkError e) {
-            // Catch error in case System.load succeeded but the specific function isn't
-            // found
             LOGGER.log(Level.SEVERE, "Native method 'convertToMp3' not found or library not loaded correctly.", e);
-            return -1; // Indicate failure
+            return -1;
         }
     }
 
-    // Declare the native method signature matching the JNI export from Rust
-    // The name format is Java_Package_Name_ClassName_MethodName
     private static native boolean convertToMp3(String inputPath, String outputPath);
 
-    // Expose backend version string provided by Rust side
     private static native String getBackendVersion();
 
-    // Adjust native log level before any other native call (levels:
-    // off,error,warn,info,debug,trace)
     private static native void setLogLevel(String level);
 
-    // Probe decodability and presence of audio stream
     private static native boolean probeInput(String inputPath);
 
     public static String backendVersion() {
@@ -145,6 +129,9 @@ public class NativeConverter {
     }
 
     public static boolean probe(String inputPath) {
+        if (!isSafeJniPath(inputPath)) {
+            return false;
+        }
         try {
             return probeInput(inputPath);
         } catch (Throwable t) {
